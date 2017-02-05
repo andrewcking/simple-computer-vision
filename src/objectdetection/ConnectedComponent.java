@@ -1,5 +1,7 @@
 package objectdetection;
 
+import org.apache.commons.math3.stat.regression.SimpleRegression;
+
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -16,6 +18,8 @@ public class ConnectedComponent {
     int left;
     int centroidX;
     int centroidY;
+    double slope;
+    double yIntercept;
 
     public void addPixel(int i) {
         pixels.add(i);
@@ -70,7 +74,23 @@ public class ConnectedComponent {
     }
 
     public void setCentroidY(int inCentY) {
+
         centroidY = inCentY;
+    }
+
+    public void getAxis(int displayWidth, int displayHeight){
+        SimpleRegression regression = new SimpleRegression();
+        for (Integer pixel : pixels) {
+            int x = pixel % displayWidth;
+            int y = Math.floorDiv(pixel, displayHeight);
+            if (width < height){
+                regression.addData(y, x);
+            } else {
+                regression.addData(x, y);
+            }
+        }
+        yIntercept = regression.getIntercept();
+        slope = regression.getSlope();
     }
 
 }

@@ -1,7 +1,6 @@
 package objectdetection;
 
 
-
 import processing.core.*;
 
 import java.util.ArrayList;
@@ -47,13 +46,15 @@ public class ObjectDetection extends PApplet {
         componentSizeFilter(660);
         getPerimeter();
         calculateCentroids();
+
         colorImage();
         //Display image changes
         image(dispImage, 0, 0);
         showRectangleBoundary();
-        outputImageInfo();
-    }
 
+        outputImageInfo();
+
+    }
 
     /**
      * Required by the processing library to set up our display window
@@ -81,16 +82,16 @@ public class ObjectDetection extends PApplet {
                 if (binaryImg[currentPix] > 0) {
                     cc.addBoundary(currentPix);
                     //N
-                    Compass.add(0,currentPix - dispImage.width);
+                    Compass.add(0, currentPix - dispImage.width);
                     //NE...
-                    Compass.add(1,currentPix - dispImage.width + 1);
+                    Compass.add(1, currentPix - dispImage.width + 1);
                     //E
-                    Compass.add(2,currentPix + 1);
-                    Compass.add(3,currentPix + dispImage.width + 1);
-                    Compass.add(4,currentPix + dispImage.width);
-                    Compass.add(5,currentPix + dispImage.width - 1);
-                    Compass.add(6,currentPix - 1);
-                    Compass.add(7,currentPix - dispImage.width - 1);
+                    Compass.add(2, currentPix + 1);
+                    Compass.add(3, currentPix + dispImage.width + 1);
+                    Compass.add(4, currentPix + dispImage.width);
+                    Compass.add(5, currentPix + dispImage.width - 1);
+                    Compass.add(6, currentPix - 1);
+                    Compass.add(7, currentPix - dispImage.width - 1);
 
                     currentPix = backTrack;
                 } else {
@@ -109,21 +110,22 @@ public class ObjectDetection extends PApplet {
         }
     }
 
-    public void calculateCentroids(){
+    public void calculateCentroids() {
         for (ConnectedComponent cc : listOfItems) {
             int xBar = 0;
             int yBar = 0;
-            for(Integer pixel : cc.pixels){
-                xBar += (pixel % displayWidth)-1;
-                yBar += Math.floorDiv(pixel,displayHeight);
+            for (Integer pixel : cc.pixels) {
+                xBar += pixel % displayWidth;
+                yBar += Math.floorDiv(pixel, displayWidth);
             }
-            xBar = xBar/cc.pixels.size();
-            yBar = yBar/cc.pixels.size();
+            xBar = xBar / cc.pixels.size();
+            yBar = yBar / cc.pixels.size();
             cc.setCentroidX(xBar);
             cc.setCentroidY(yBar);
         }
 
     }
+
     /**
      * Loads our grayscale image GImage to a byte array
      */
@@ -296,7 +298,7 @@ public class ObjectDetection extends PApplet {
 
             }
             for (int pix : listOfItems.get(i).boundary) {
-                dispImage.pixels[pix] = color(1,1,1);
+                dispImage.pixels[pix] = color(1, 1, 1);
 
             }
         }
@@ -314,16 +316,30 @@ public class ObjectDetection extends PApplet {
             rect(item.getLeft(), item.getTop(), item.getWidth(), item.getHeight());
             //fill(0, 255,0);
             ellipse(item.centroidX, item.centroidY, 6, 6);
+            int c = 100;
+            double m = item.slope;
+            double b = item.yIntercept;
+            item.getAxis(displayWidth,displayHeight);
+            //line(item.centroidX,item.centroidY,0,(float)item.yIntercept);
+            if(item.width < item.height){
+                line(item.centroidX, item.centroidY, (float) item.centroidX - ((float) item.slope * 100),(float) item.centroidY - 100);
+                line(item.centroidX, item.centroidY, (float) item.centroidX + ((float) item.slope * 100), (float) item.centroidY + 100);
+            } else {
+                line(item.centroidX, item.centroidY, (float) item.centroidX - 100, (float) item.centroidY - ((float) item.slope * 100));
+                line(item.centroidX, item.centroidY, (float) item.centroidX + 100, (float) item.centroidY + ((float) item.slope * 100));
+            }
+
         }
     }
 
-    public void outputImageInfo(){
+    public void outputImageInfo() {
 
         for (int i = 0; i < listOfItems.size(); i++) {
-            System.out.println("Item " + i +" area: "+ listOfItems.get(i).pixels.size());
-            System.out.println("centroid: " + listOfItems.get(i).centroidX + "," + listOfItems.get(i).centroidY );
-            System.out.println("perimeter: " + listOfItems.get(i).boundary.size()+ "\n");
-
+            System.out.println("Item " + i + " area: " + listOfItems.get(i).pixels.size());
+            System.out.println("centroid: " + listOfItems.get(i).centroidX + "," + listOfItems.get(i).centroidY);
+            System.out.println("perimeter: " + listOfItems.get(i).boundary.size());
+            System.out.println("compactness: " + (Math.pow(listOfItems.get(i).boundary.size(), 2) / listOfItems.get(i).pixels.size()));
+            System.out.println("axis of elongation: " + listOfItems.get(i).centroidY + " = " + listOfItems.get(i).slope + "*" + listOfItems.get(i).centroidX + " + " + listOfItems.get(i).yIntercept + "\n");
         }
         println("Number of items: " + itemCount);
     }
