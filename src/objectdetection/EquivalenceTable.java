@@ -1,4 +1,4 @@
-package componentdetect;
+package objectdetection;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,43 +14,45 @@ public class EquivalenceTable {
 
     //what label number we are currently assigning
     short labelCount = 2;
-    
+
     //creats a new list in the list and adds the variable to it
     public void createNewLabel(short newInt) {
         List<Short> myList = new ArrayList();
         myList.add(newInt);
         listOfLists.add(myList);
-        listOfLists.size();
+        //listOfLists.size();
     }
 
+    //the problem is here!
     //find the row in the table to add to, then add it
-    public void assignNewValue(short west, short north){
+
+    public void assignNewValue(short west, short north) {
         int indexOfNorth = find(north);
         int indexOfWest = find(west);
-        //cast to object so we can remove as object instead of it being treated as a removeat
-        listOfLists.get(indexOfWest).remove((Object) west);
-        listOfLists.get(indexOfNorth).add(west);
-        //if list is now empty remove it
-        if(listOfLists.get(indexOfWest).size() == 0){
+        //if they arent in the same list then add all items from one list and then remove it (since if one of them are equiv then they all are)
+        if (indexOfNorth != indexOfWest) {
+            listOfLists.get(indexOfNorth).addAll(listOfLists.get(indexOfWest));
             listOfLists.remove(indexOfWest);
+
+
         }
     }
-    
+
     //find what row x is
     public int find(short x) {
         for (int i = 0; i < listOfLists.size(); i++) {
-            if (listOfLists.get(i).contains(x)){
+            if (listOfLists.get(i).contains(x)) {
                 return i;
             }
         }
         //could not find
-        System.out.println("Error! We could not find " +x);
+        System.out.println("Error! We could not find " + x);
         return -2;
     }
-    public short getLabelNumber(){
+
+    public short getLabelNumber() {
         return labelCount++;
     }
-
 
     short findLowest(short label) {
         int i = find(label);
@@ -58,10 +60,12 @@ public class EquivalenceTable {
         return min;
     }
 
-    int getNumOfObjects(){
+    int getNumOfObjects() {
         return listOfLists.size();
     }
-    Short getLabel(int i){
-        return listOfLists.get(i).get(0);
+
+    Short getLabel(int i) {
+        //because we assigned the min we have to return the min when we condense
+        return Collections.min(listOfLists.get(i));
     }
 }

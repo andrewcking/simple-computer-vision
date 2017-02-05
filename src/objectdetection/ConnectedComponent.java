@@ -1,29 +1,37 @@
-package componentdetect;
+package objectdetection;
 
 import java.util.ArrayList;
 import java.util.Collections;
 
 /**
- *
  * @author Andrew King
  */
 public class ConnectedComponent {
 
-    ArrayList<Integer> pixels = new ArrayList<Integer>();
+    ArrayList<Integer> pixels = new ArrayList<>();
+    ArrayList<Integer> boundary = new ArrayList<>();
     int width;
     int height;
     int top;
     int left;
+    int centroidX;
+    int centroidY;
+
     public void addPixel(int i) {
         pixels.add(i);
     }
 
+    public void addBoundary(int i) {
+        boundary.add(i);
+    }
+
     public void getBounds(int fullWidth) {
+
         left = Integer.MAX_VALUE;
         int right = 0;
         int max = Collections.max(pixels);
         int min = Collections.min(pixels);
-        
+
         for (int x = 0; x < pixels.size(); x++) {
             //get far right and far left coord of object
             if (pixels.get(x) % fullWidth < left) {
@@ -37,10 +45,10 @@ public class ConnectedComponent {
         top = (min / fullWidth) - 1;
         int bottom = max / fullWidth + 1;
         height = bottom - top;
-        //System.out.println("width " + width + " height " + height + " top " + top + " left " + left);
+
     }
 
-    
+
     public int getWidth() {
         return width;
     }
@@ -57,5 +65,12 @@ public class ConnectedComponent {
         return left;
     }
 
+    public void setCentroidX(int inCentX) {
+        centroidX = inCentX;
+    }
+
+    public void setCentroidY(int inCentY) {
+        centroidY = inCentY;
+    }
 
 }
