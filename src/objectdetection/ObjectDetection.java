@@ -316,14 +316,18 @@ public class ObjectDetection extends PApplet {
             item.getBounds(dispImage.width);
             rect(item.getLeft(), item.getTop(), item.getWidth(), item.getHeight());
             //fill(0, 255,0);
+
+            //display centroid
             ellipse(item.centroidX, item.centroidY, 6, 6);
             int c = 100;
             double m = item.slope;
             double b = item.yIntercept;
-            item.getAxis(displayWidth,displayHeight);
+
+            //display axis of orientation
+            item.getAxis(displayWidth, displayHeight);
             //line(item.centroidX,item.centroidY,0,(float)item.yIntercept);
-            if(item.width < item.height){
-                line(item.centroidX, item.centroidY, (float) item.centroidX - ((float) item.slope * 100),(float) item.centroidY - 100);
+            if (item.width < item.height) {
+                line(item.centroidX, item.centroidY, (float) item.centroidX - ((float) item.slope * 100), (float) item.centroidY - 100);
                 line(item.centroidX, item.centroidY, (float) item.centroidX + ((float) item.slope * 100), (float) item.centroidY + 100);
             } else {
                 line(item.centroidX, item.centroidY, (float) item.centroidX - 100, (float) item.centroidY - ((float) item.slope * 100));
@@ -335,15 +339,21 @@ public class ObjectDetection extends PApplet {
 
     public void outputImageInfo() {
 
-        for (int i = 0; i < listOfItems.size(); i++) {
-            System.out.println("Item " + i + " area: " + listOfItems.get(i).pixels.size());
-            System.out.println("centroid: " + listOfItems.get(i).centroidX + "," + listOfItems.get(i).centroidY);
-            System.out.println("perimeter: " + listOfItems.get(i).boundary.size());
-            System.out.println("compactness: " + (Math.pow(listOfItems.get(i).boundary.size(), 2) / listOfItems.get(i).pixels.size()));
-            System.out.println("axis of elongation: " + listOfItems.get(i).centroidY + " = " + listOfItems.get(i).slope + "*" + listOfItems.get(i).centroidX + " + " + listOfItems.get(i).yIntercept );
-            System.out.println("eccentricity: " + listOfItems.get(i).eccentricity+ "\n");
-        }
         println("Number of items: " + itemCount);
+        println("------------------");
+        for (int i = 0; i < listOfItems.size(); i++) {
+            ConnectedComponent cc = listOfItems.get(i);
+            println("---Item " + i + "---");
+            println("area: " + cc.pixels.size());
+            println("centroid: " + cc.centroidX + "," + cc.centroidY);
+            println("bounding box: leftTop: " + cc.left + ","+ cc.top +" rightBottom: " + (cc.left+cc.width) + "," + (cc.top+cc.height));
+            println("axis of elongation: " + cc.centroidY + " = " + cc.slope + "*" + cc.centroidX + " + " + cc.yIntercept);
+            println("eccentricity: " + cc.eccentricity);
+            println("perimeter: " + cc.boundary.size());
+            println("compactness: " + (Math.pow(cc.boundary.size(), 2) / cc.pixels.size()));
+            println();
+        }
+
     }
 
     public static void main(String[] args) {
