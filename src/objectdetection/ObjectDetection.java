@@ -12,7 +12,7 @@ import java.util.List;
  */
 public class ObjectDetection extends PApplet {
 
-    //our display image
+    //our display window
     PImage dispImage;
     //binary image threshhold
     int threshold = 128;
@@ -43,7 +43,7 @@ public class ObjectDetection extends PApplet {
         collapseLabels();
         createComponents();
         //takes filter size as argument
-        componentSizeFilter(660);
+        componentSizeFilter(1850);
         getPerimeter();
         calculateCentroids();
 
@@ -55,6 +55,7 @@ public class ObjectDetection extends PApplet {
         outputImageInfo();
 
     }
+
 
     /**
      * Required by the processing library to set up our display window
@@ -133,7 +134,7 @@ public class ObjectDetection extends PApplet {
         //image title,width,height, number of bytes to strip (for metadata)
         GImage gray = new GImage(filename, displayWidth, displayHeight, trimHeader);
         byte[] grayPixels = gray.getPixels();
-        //display our grayscale image (by affecting obImage)
+        //display our grayscale image (by affecting dispImage)
         for (int i = 0; i < dispImage.pixels.length; i++) {
             dispImage.pixels[i] = color(Byte.toUnsignedInt(grayPixels[i]));
 
@@ -339,7 +340,8 @@ public class ObjectDetection extends PApplet {
             System.out.println("centroid: " + listOfItems.get(i).centroidX + "," + listOfItems.get(i).centroidY);
             System.out.println("perimeter: " + listOfItems.get(i).boundary.size());
             System.out.println("compactness: " + (Math.pow(listOfItems.get(i).boundary.size(), 2) / listOfItems.get(i).pixels.size()));
-            System.out.println("axis of elongation: " + listOfItems.get(i).centroidY + " = " + listOfItems.get(i).slope + "*" + listOfItems.get(i).centroidX + " + " + listOfItems.get(i).yIntercept + "\n");
+            System.out.println("axis of elongation: " + listOfItems.get(i).centroidY + " = " + listOfItems.get(i).slope + "*" + listOfItems.get(i).centroidX + " + " + listOfItems.get(i).yIntercept );
+            System.out.println("eccentricity: " + listOfItems.get(i).eccentricity+ "\n");
         }
         println("Number of items: " + itemCount);
     }

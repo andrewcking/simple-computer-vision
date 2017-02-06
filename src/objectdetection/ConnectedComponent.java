@@ -20,6 +20,8 @@ public class ConnectedComponent {
     int centroidY;
     double slope;
     double yIntercept;
+    double xMax;
+    double eccentricity;
 
     public void addPixel(int i) {
         pixels.add(i);
@@ -80,15 +82,21 @@ public class ConnectedComponent {
 
     public void getAxis(int displayWidth, int displayHeight){
         SimpleRegression regression = new SimpleRegression();
+        SimpleRegression regressionalt = new SimpleRegression();
         for (Integer pixel : pixels) {
             int x = pixel % displayWidth;
             int y = Math.floorDiv(pixel, displayHeight);
             if (width < height){
                 regression.addData(y, x);
+                regressionalt.addData(x, y);
             } else {
                 regression.addData(x, y);
+                regressionalt.addData(y, x);
             }
         }
+
+        xMax = regressionalt.getSumSquaredErrors();
+        eccentricity = xMax/regression.getSumSquaredErrors();
         yIntercept = regression.getIntercept();
         slope = regression.getSlope();
     }
