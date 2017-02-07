@@ -3,9 +3,16 @@ package objectdetection;
 
 import processing.core.*;
 
+import java.io.IOException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * @author Andrew King
@@ -28,31 +35,26 @@ public class ObjectDetection extends PApplet {
     int displayWidth = 512;
     int displayHeight = 512;
 
+    /**
+     * Driver method called by the main method
+     */
     public void setup() {
         //set our current display to 512x512 grayscale image
         dispWindow = createImage(displayWidth, displayHeight, ALPHA);
-
         //Arg 1: filename -- Arg 2: # of bytes to trim from head
         loadImageData("comb.img", 512);
-
         convertToBinaryImage();
         //takes filter size as argument
         connectedComponent(150);
-
         //color our image turn this off to see original image
         colorImage();
-
         //Display image in display window beginning at top left corner
         image(dispWindow, 0, 0);
-
-        //Show bounding box, centroid, axis of elongation
-        showInfoDetails();
-
+        //Show bounding box, centroid
+        showItemDetails();
         //output component details
         outputImageInfo();
-
     }
-
 
     /**
      * Required by the processing library to set up our display window
@@ -61,24 +63,28 @@ public class ObjectDetection extends PApplet {
         size(displayWidth, displayWidth);
     }
 
-
     /**
-     * Loads our grayscale image GImage to a byte array
+     * Loads our grayscale image to a byte array and trims the header info, also sets the display window to display it
      */
     public void loadImageData(String filename, int trimHeader) {
-        //image title,width,height, number of bytes to strip (for metadata)
-        GImage gray = new GImage(filename, displayWidth, displayHeight, trimHeader);
-        byte[] grayPixels = gray.getPixels();
+
+        byte[] graypixels = {};
+        Path p = FileSystems.getDefault().getPath("", filename);
+        try {
+            graypixels = Files.readAllBytes(p);
+        } catch (IOException ex) {
+            Logger.getLogger(ObjectDetection.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        byte[] grayPixelsTrim = Arrays.copyOfRange(graypixels, trimHeader, graypixels.length);
         //display our grayscale image (by affecting dispImage)
         for (int i = 0; i < dispWindow.pixels.length; i++) {
-            dispWindow.pixels[i] = color(Byte.toUnsignedInt(grayPixels[i]));
+            dispWindow.pixels[i] = color(Byte.toUnsignedInt(grayPixelsTrim[i]));
 
         }
-
     }
 
     /**
-     * Loads our GImage and converts it to a binary image based on our threshold
+     * Loads our grayscale Image and converts it to a binary image based on our threshold
      */
     public void convertToBinaryImage() {
         //create binary image array
@@ -142,11 +148,13 @@ public class ObjectDetection extends PApplet {
                 }
             }
         }
+        //Calls to other methods to finish algorithm
         collapseLabels(equivTab);
         createComponents();
         componentSizeFilter(filtersize);
+        //run the calculations for each component so that they generate their metrics
         for (ConnectedComponent cc : listOfItems) {
-            cc.runComputations(displayWidth, displayHeight, binaryImg);
+            cc.runCalculations(displayWidth, displayHeight, binaryImg);
         }
     }
 
@@ -155,7 +163,6 @@ public class ObjectDetection extends PApplet {
      * so they are sequential
      */
     public void collapseLabels(EquivalenceTable equivTab) {
-
         //first collapse the labels to 1 per component
         for (int i = 0; i < binaryImg.length; i++) {
             //when we find a label
@@ -179,7 +186,6 @@ public class ObjectDetection extends PApplet {
                 }
             }
         }
-
     }
 
     /**
@@ -203,12 +209,10 @@ public class ObjectDetection extends PApplet {
      * set those components to background pixels
      */
     private void componentSizeFilter(int filterSize) {
-
         //we have to use an iterator to prevent concurrent modification
         Iterator<ConnectedComponent> iter = listOfItems.iterator();
         while (iter.hasNext()) {
             ConnectedComponent cc = iter.next();
-
             if (cc.pixels.size() < filterSize) {
                 for (int i2 = 0; i2 < cc.pixels.size(); i2++) {
                     binaryImg[cc.pixels.get(i2)] = 0;
@@ -217,14 +221,12 @@ public class ObjectDetection extends PApplet {
                 itemCount--;
             }
         }
-
     }
 
     /**
      * Display the background and a unique color for each image
      */
     private void colorImage() {
-
         //color background
         for (int i = 0; i < binaryImg.length; i++) {
             if (binaryImg[i] == 0) {
@@ -235,59 +237,39 @@ public class ObjectDetection extends PApplet {
         for (int i = 0; i < listOfItems.size(); i++) {
             for (int pix : listOfItems.get(i).pixels) {
                 dispWindow.pixels[pix] = color(254 / (i + 1), 150 / (i + 1), (i + 1) * 50);
-
             }
-            for (int pix : listOfItems.get(i).boundary) {
+            //color perimeter
+            for (int pix : listOfItems.get(i).perimeter) {
                 dispWindow.pixels[pix] = color(1, 1, 1);
-
             }
         }
-
     }
 
     /**
-     * Display the bounding box
+     * Display the bounding box and centroids
      */
-    private void showInfoDetails() {
+    private void showItemDetails() {
         stroke(0, 255, 0);
         fill(0, 0);
         for (ConnectedComponent cc : listOfItems) {
             //display bounding boxes
-            rect(cc.getLeft(), cc.getTop(), cc.getWidth(), cc.getHeight());
+            rect(cc.getLeft(), cc.getTop(), cc.getWidth() + 1, cc.getHeight() + 1);
 
             //display centroid
             ellipse(cc.getCentroidX(), cc.getCentroidY(), 6, 6);
-
-            //display axis of orientation
-            //line(item.centroidX,cc.centroidY,0,(float)cc.yIntercept);
-            if (cc.getWidth() < cc.getHeight()) {
-                line(cc.getCentroidX(), cc.getCentroidY(), (float) cc.getCentroidX() - ((float) cc.getSlope() * 100), (float) cc.getCentroidY() - 100);
-                line(cc.getCentroidX(), cc.getCentroidY(), (float) cc.getCentroidX() + ((float) cc.getSlope() * 100), (float) cc.getCentroidY() + 100);
-            } else {
-                line(cc.getCentroidX(), cc.getCentroidY(), (float) cc.getCentroidX() - 100, (float) cc.getCentroidY() - ((float) cc.getSlope() * 100));
-                line(cc.getCentroidX(), cc.getCentroidY(), (float) cc.getCentroidX() + 100, (float) cc.getCentroidY() + ((float) cc.getSlope() * 100));
-            }
-
         }
     }
 
     public void outputImageInfo() {
-
+        println("------------------------------------");
         println("Number of items: " + itemCount);
-        println("------------------");
+        println("------------------------------------");
         for (int i = 0; i < listOfItems.size(); i++) {
             ConnectedComponent cc = listOfItems.get(i);
-            println("---Item " + i + "---");
-            println("area: " + cc.pixels.size());
-            println("centroid: " + cc.getCentroidX() + "," + cc.getCentroidY());
-            println("bounding box: leftTop: " + cc.getLeft() + "," + cc.getTop() + " rightBottom: " + (cc.getLeft() + cc.getWidth()) + "," + (cc.getTop() + cc.getHeight()));
-            println("axis of elongation: " + cc.getCentroidY() + " = " + cc.getSlope() + "*" + cc.getCentroidX() + " + " + cc.getyIntercept());
-            println("eccentricity: " + cc.getEccentricity());
-            println("perimeter: " + cc.boundary.size());
-            println("compactness: " + (Math.pow(cc.boundary.size(), 2) / cc.pixels.size()));
+            println("------Item " + i + "------");
+            cc.printObject();
             println();
         }
-
     }
 
     public static void main(String[] args) {
