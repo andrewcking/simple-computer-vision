@@ -13,7 +13,7 @@ public class EquivalenceTable {
     List<List<Short>> listOfLists = new ArrayList<List<Short>>();
 
     //what label number we are currently assigning
-    short labelCount = 2;
+    public short labelCount = 2;
 
     //creates a new list in the list and adds the variable to it
     public void createNewLabel(short newInt) {
@@ -45,22 +45,16 @@ public class EquivalenceTable {
         return -2;
     }
 
-    public short getLabelNumber() {
-        return labelCount++;
-    }
-
     public short findLowest(short label) {
         int i = find(label);
         short min = Collections.min(listOfLists.get(i));
         return min;
     }
 
-    int getNumOfObjects() {
-        return listOfLists.size();
-    }
+    //because we assigned the min we have to return the min when we condense
+    public Short getLabel(int i) { return Collections.min(listOfLists.get(i)); }
 
-    public Short getLabel(int i) {
-        //because we assigned the min we have to return the min when we condense
-        return Collections.min(listOfLists.get(i));
-    }
+    public int getNumOfObjects() { return listOfLists.size(); }
+
+    public short getLabelNumber() { return labelCount++; }
 }

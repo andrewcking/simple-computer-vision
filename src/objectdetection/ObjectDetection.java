@@ -3,16 +3,10 @@ package objectdetection;
 
 import processing.core.*;
 
-import java.io.IOException;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * @author Andrew King
@@ -45,13 +39,13 @@ public class ObjectDetection extends PApplet {
         loadImageData("comb.img", 512);
         convertToBinaryImage();
         //takes filter size as argument
-        connectedComponent(1500);
+        connectedComponent(50);
         //color our image turn this off to see original image
         colorImage();
         //Display image in display window beginning at top left corner
         image(dispWindow, 0, 0);
-        //Show bounding box, centroid
-        showItemDetails();
+        //Show bounding box, centroid, but not centroid coordinates
+        showItemDetails(true, true, false);
         //output component details
         outputImageInfo();
     }
@@ -64,19 +58,14 @@ public class ObjectDetection extends PApplet {
     }
 
     /**
-     * Loads our grayscale image to a byte array and trims the header info, also sets the display window to display it
+     * Loads our grayscale image to a byte array and trims the header info, also loads the pixels into the display window for further manipulation
      */
     public void loadImageData(String filename, int trimHeader) {
-
-        byte[] graypixels = {};
-        Path p = FileSystems.getDefault().getPath("", filename);
-        try {
-            graypixels = Files.readAllBytes(p);
-        } catch (IOException ex) {
-            Logger.getLogger(ObjectDetection.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        //utilize processing loadBytes call
+        byte[] graypixels = loadBytes(filename);
+        //trim the header data from the image
         byte[] grayPixelsTrim = Arrays.copyOfRange(graypixels, trimHeader, graypixels.length);
-        //display our grayscale image (by affecting dispImage)
+        //load/display our grayscale image (by affecting dispImage)
         for (int i = 0; i < dispWindow.pixels.length; i++) {
             dispWindow.pixels[i] = color(Byte.toUnsignedInt(grayPixelsTrim[i]));
 
@@ -249,15 +238,25 @@ public class ObjectDetection extends PApplet {
     /**
      * Display the bounding box and centroids
      */
-    private void showItemDetails() {
+    private void showItemDetails(boolean boundingBox, boolean centroid, boolean cCoordinates) {
         stroke(0, 255, 0);
         fill(0, 0);
         for (ConnectedComponent cc : listOfItems) {
             //display bounding boxes
-            rect(cc.getLeft(), cc.getTop(), cc.getWidth() + 1, cc.getHeight() + 1);
-
+            if (boundingBox) {
+                rect(cc.getLeft(), cc.getTop(), cc.getWidth() + 1, cc.getHeight() + 1);
+            }
             //display centroid
-            ellipse(cc.getCentroidX(), cc.getCentroidY(), 6, 6);
+            if (centroid) {
+                ellipse(cc.getCentroidX(), cc.getCentroidY(), 6, 6);
+            }
+            //display centroid coordinates
+            if (cCoordinates) {
+                fill(0);
+                textSize(12);
+                text(cc.getCentroidX() + "," + cc.getCentroidY(), cc.getCentroidX() - 50, cc.getCentroidY() + 5);
+                fill(0, 0);
+            }
         }
     }
 

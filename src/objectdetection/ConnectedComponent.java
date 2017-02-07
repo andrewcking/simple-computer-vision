@@ -8,7 +8,7 @@ import static processing.core.PApplet.println;
 
 /**
  * @author Andrew King
- * Class for our components, contains their pixel info and metrics
+ *         Class for our components, contains their pixel info and metrics
  */
 public class ConnectedComponent {
 
@@ -16,25 +16,14 @@ public class ConnectedComponent {
     List<Integer> pixels = new ArrayList<>();
     List<Integer> perimeter = new ArrayList<>();
     //width and height of object (not of bounding box)
-    int width;
-    int height;
+    int width, height;
     //top left coordinates of bounding box
-    int top;
-    int left;
-    //centroid coordinates
-    int centroidX;
-    int centroidY;
+    int top, left, centroidX, centroidY;
     //second-order moments
-    float a;
-    float b;
-    float c;
+    float a, b, c;
     //various metrics about the object
-    double sinTwoTheta;
-    double cosTwoTheta;
-    double chiSquaredMax;
-    double chiSquaredMin;
-    double eccentricity;
-    double compactness;
+    double sinTwoTheta, cosTwoTheta, chiSquaredMax, chiSquaredMin, eccentricity, compactness;
+
     public void addPixel(int i) {
         pixels.add(i);
     }
@@ -151,7 +140,7 @@ public class ConnectedComponent {
     public void printObject() {
         println("area: " + pixels.size());
         println("centroid(xbar, ybar): " + centroidX + "," + centroidY);
-        println("bounding box [i,j]: TopLeft: " + top + "," + left + " BottomRight: " + (top + height+2) + "," + (left + width+2));
+        println("bounding box [i,j]: TopLeft: " + top + "," + left + " BottomRight: " + (top + height + 2) + "," + (left + width + 2));
 
         println("axis of elongation: sinTwoTheta: " + String.format("%.4f", sinTwoTheta));
         println("\t" + "cosTwoTheta: " + String.format("%.4f", cosTwoTheta));
@@ -163,29 +152,17 @@ public class ConnectedComponent {
         println("compactness: " + String.format("%.4f", compactness));
     }
 
-    public int getWidth() {
-        return width;
-    }
+    public int getWidth() { return width; }
 
-    public int getHeight() {
-        return height;
-    }
+    public int getHeight() { return height; }
 
-    public int getTop() {
-        return top;
-    }
+    public int getTop() { return top; }
 
-    public int getLeft() {
-        return left;
-    }
+    public int getLeft() { return left; }
 
-    public int getCentroidX() {
-        return centroidX;
-    }
+    public int getCentroidX() { return centroidX; }
 
-    public int getCentroidY() {
-        return centroidY;
-    }
+    public int getCentroidY() { return centroidY; }
 
 
 }
