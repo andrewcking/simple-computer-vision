@@ -15,7 +15,7 @@ public class EquivalenceTable {
     //what label number we are currently assigning
     short labelCount = 2;
 
-    //creats a new list in the list and adds the variable to it
+    //creates a new list in the list and adds the variable to it
     public void createNewLabel(short newInt) {
         List<Short> myList = new ArrayList();
         myList.add(newInt);
@@ -23,8 +23,6 @@ public class EquivalenceTable {
         //listOfLists.size();
     }
 
-    //the problem is here!
-    //find the row in the table to add to, then add it
 
     public void assignNewValue(short west, short north) {
         int indexOfNorth = find(north);
@@ -64,7 +62,7 @@ public class EquivalenceTable {
         return listOfLists.size();
     }
 
-    Short getLabel(int i) {
+    public Short getLabel(int i) {
         //because we assigned the min we have to return the min when we condense
         return Collections.min(listOfLists.get(i));
     }
