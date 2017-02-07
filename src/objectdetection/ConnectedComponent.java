@@ -2,6 +2,7 @@ package objectdetection;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 import static processing.core.PApplet.println;
 
@@ -12,8 +13,8 @@ import static processing.core.PApplet.println;
 public class ConnectedComponent {
 
     //item and perimeter pixels in object
-    ArrayList<Integer> pixels = new ArrayList<>();
-    ArrayList<Integer> perimeter = new ArrayList<>();
+    List<Integer> pixels = new ArrayList<>();
+    List<Integer> perimeter = new ArrayList<>();
     //width and height of object (not of bounding box)
     int width;
     int height;

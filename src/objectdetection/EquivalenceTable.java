@@ -52,7 +52,7 @@ public class EquivalenceTable {
         return labelCount++;
     }
 
-    short findLowest(short label) {
+    public short findLowest(short label) {
         int i = find(label);
         short min = Collections.min(listOfLists.get(i));
         return min;

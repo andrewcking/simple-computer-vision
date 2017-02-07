@@ -236,7 +236,8 @@ public class ObjectDetection extends PApplet {
         //color foreground
         for (int i = 0; i < listOfItems.size(); i++) {
             for (int pix : listOfItems.get(i).pixels) {
-                dispWindow.pixels[pix] = color(254 / (i + 1), 150 / (i + 1), (i + 1) * 50);
+                randomSeed(i);
+                dispWindow.pixels[pix] = color(random(0,200), random(0,200), random(50,255));
             }
             //color perimeter
             for (int pix : listOfItems.get(i).perimeter) {
