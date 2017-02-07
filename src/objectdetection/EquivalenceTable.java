@@ -20,7 +20,6 @@ public class EquivalenceTable {
         List<Short> myList = new ArrayList();
         myList.add(newInt);
         listOfLists.add(myList);
-        //listOfLists.size();
     }
 
 
@@ -31,8 +30,6 @@ public class EquivalenceTable {
         if (indexOfNorth != indexOfWest) {
             listOfLists.get(indexOfNorth).addAll(listOfLists.get(indexOfWest));
             listOfLists.remove(indexOfWest);
-
-
         }
     }
 

@@ -45,7 +45,7 @@ public class ObjectDetection extends PApplet {
         loadImageData("comb.img", 512);
         convertToBinaryImage();
         //takes filter size as argument
-        connectedComponent(150);
+        connectedComponent(1500);
         //color our image turn this off to see original image
         colorImage();
         //Display image in display window beginning at top left corner
