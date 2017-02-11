@@ -4,7 +4,6 @@ package objectdetection;
 import processing.core.*;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -20,7 +19,7 @@ public class ObjectDetection extends PApplet {
     //counter for the number of items
     short itemCount = 0;
     //array for our binary image
-    short[] binaryImg;
+    short[] imageArray;
     //list of our components
     List<ConnectedComponent> listOfItems = new ArrayList<>();
 
@@ -33,7 +32,7 @@ public class ObjectDetection extends PApplet {
      * Driver method called by the main method
      */
     public void setup() {
-        //set our current display to 512x512 grayscale image
+        //set our current display to 512x512 gray scale image
         dispWindow = createImage(displayWidth, displayHeight, ALPHA);
         //Arg 1: filename -- Arg 2: # of bytes to trim from head
         loadImageData("comb.img", 512);
@@ -48,6 +47,7 @@ public class ObjectDetection extends PApplet {
         showItemDetails(true, true, false);
         //output component details
         outputImageInfo();
+
     }
 
     /**
@@ -58,37 +58,33 @@ public class ObjectDetection extends PApplet {
     }
 
     /**
-     * Loads our grayscale image to a byte array and trims the header info, also loads the pixels into the display window for further manipulation
+     * Loads our gray scale image to a byte array and trims the header info
+     * pulls from byte file to short array since that will accommodate more label numbers
      */
     public void loadImageData(String filename, int trimHeader) {
         //utilize processing loadBytes call
-        byte[] graypixels = loadBytes(filename);
-        //trim the header data from the image
-        byte[] grayPixelsTrim = Arrays.copyOfRange(graypixels, trimHeader, graypixels.length);
-        //load/display our grayscale image (by affecting dispImage)
-        for (int i = 0; i < dispWindow.pixels.length; i++) {
-            dispWindow.pixels[i] = color(Byte.toUnsignedInt(grayPixelsTrim[i]));
-
+        byte[] grayPixels = loadBytes(filename);
+        //create binary image array
+        imageArray = new short[dispWindow.width * dispWindow.height];
+        //trim the header data from the image and make it a short so we can have larger label numbers
+        for(int i = trimHeader; i < grayPixels.length; i++){
+            //since these are unsigned bytes we have to read them as such and covert them back to short
+            imageArray[i - trimHeader] = (short) Byte.toUnsignedInt(grayPixels[i]);
         }
     }
 
     /**
-     * Loads our grayscale Image and converts it to a binary image based on our threshold
+     * Loads our gray scale Image and converts it to a binary image based on our threshold
      */
     public void convertToBinaryImage() {
-        //create binary image array
-        binaryImg = new short[dispWindow.width * dispWindow.height];
         //CONVERT TO BINARY IMAGE
-        //for each pixel
-        for (int i = 0; i < dispWindow.pixels.length; i++) {
-            //get its color and get the brightness of that color
-            int pixelColor = dispWindow.pixels[i];
-            float brightness = brightness(pixelColor);
+        //for each pixel in our image
+        for (int i = 0; i < imageArray.length; i++) {
             //if the brightness is less than our threshold color the pixel black otherwise white
-            if (brightness > threshold) {
-                binaryImg[i] = 0;
+            if (imageArray[i] > threshold) {
+                imageArray[i] = 0;
             } else {
-                binaryImg[i] = 1;
+                imageArray[i] = 1;
             }
         }
     }
@@ -104,11 +100,11 @@ public class ObjectDetection extends PApplet {
         EquivalenceTable equivTab = new EquivalenceTable();
 
         //scan left to right until you find a 1 pixel
-        for (int i = 0; i < binaryImg.length; i++) {
-            if (binaryImg[i] == 1) {
+        for (int i = 0; i < imageArray.length; i++) {
+            if (imageArray[i] == 1) {
 
                 //SEQUENTIAL CONNECTED COMPONENT
-                int N = i - dispWindow.width;
+                int N = i - displayWidth;
                 int W = i - 1;
                 //catch exceptions where we are looking at a pixel that does not exist (treat them as 0 pixels)
                 if (N < 0) {
@@ -118,22 +114,22 @@ public class ObjectDetection extends PApplet {
                     W = 0;
                 }
                 //if the N pixel has a label and the W does not: assign the value of the N pixel to the current pixel
-                if (binaryImg[N] > 1 && binaryImg[W] < 2) {
-                    binaryImg[i] = binaryImg[N];
+                if (imageArray[N] > 1 && imageArray[W] < 2) {
+                    imageArray[i] = imageArray[N];
                     //if the W pixel has a label and the N does not: assign the value of the W pixel to the current pixel
-                } else if (binaryImg[W] > 1 && binaryImg[N] < 2) {
-                    binaryImg[i] = binaryImg[W];
+                } else if (imageArray[W] > 1 && imageArray[N] < 2) {
+                    imageArray[i] = imageArray[W];
                     //if they both have a label and it is the same
-                } else if (binaryImg[N] == binaryImg[W] && binaryImg[N] > 1 && binaryImg[W] > 1) {
-                    binaryImg[i] = binaryImg[N];
+                } else if (imageArray[N] == imageArray[W] && imageArray[N] > 1 && imageArray[W] > 1) {
+                    imageArray[i] = imageArray[N];
                     //if they both have labels AND they are both different ones
-                } else if (binaryImg[N] != binaryImg[W] && binaryImg[N] > 1 && binaryImg[W] > 1) {
-                    binaryImg[i] = binaryImg[N];
+                } else if (imageArray[N] != imageArray[W] && imageArray[N] > 1 && imageArray[W] > 1) {
+                    imageArray[i] = imageArray[N];
                     //(west, north)
-                    equivTab.assignNewValue(binaryImg[W], binaryImg[N]);
+                    equivTab.assignNewValue(imageArray[W], imageArray[N]);
                 } else {
-                    binaryImg[i] = equivTab.getLabelNumber();
-                    equivTab.createNewLabel(binaryImg[i]);
+                    imageArray[i] = equivTab.getLabelNumber();
+                    equivTab.createNewLabel(imageArray[i]);
                 }
             }
         }
@@ -143,7 +139,7 @@ public class ObjectDetection extends PApplet {
         componentSizeFilter(filtersize);
         //run the calculations for each component so that they generate their metrics
         for (ConnectedComponent cc : listOfItems) {
-            cc.runCalculations(displayWidth, displayHeight, binaryImg);
+            cc.runCalculations(displayWidth, displayHeight, imageArray);
         }
     }
 
@@ -153,11 +149,11 @@ public class ObjectDetection extends PApplet {
      */
     public void collapseLabels(EquivalenceTable equivTab) {
         //first collapse the labels to 1 per component
-        for (int i = 0; i < binaryImg.length; i++) {
+        for (int i = 0; i < imageArray.length; i++) {
             //when we find a label
-            if (binaryImg[i] > 1) {
+            if (imageArray[i] > 1) {
                 //this could be optimized
-                binaryImg[i] = equivTab.findLowest(binaryImg[i]);
+                imageArray[i] = equivTab.findLowest(imageArray[i]);
             }
         }
 
@@ -169,9 +165,9 @@ public class ObjectDetection extends PApplet {
             short currentLabel = equivTab.getLabel(i);
             //loop through image and reset the pixels to our count
             itemCount++;
-            for (int p = 0; p < binaryImg.length; p++) {
-                if (binaryImg[p] == currentLabel) {
-                    binaryImg[p] = (short) (itemCount + 1);
+            for (int p = 0; p < imageArray.length; p++) {
+                if (imageArray[p] == currentLabel) {
+                    imageArray[p] = (short) (itemCount + 1);
                 }
             }
         }
@@ -185,8 +181,8 @@ public class ObjectDetection extends PApplet {
         for (int i = 0; i < itemCount; i++) {
             ConnectedComponent item = new ConnectedComponent();
             listOfItems.add(item);
-            for (int p = 0; p < binaryImg.length; p++) {
-                if (binaryImg[p] == i + 2) {
+            for (int p = 0; p < imageArray.length; p++) {
+                if (imageArray[p] == i + 2) {
                     listOfItems.get(i).addPixel(p);
                 }
             }
@@ -204,7 +200,7 @@ public class ObjectDetection extends PApplet {
             ConnectedComponent cc = iter.next();
             if (cc.pixels.size() < filterSize) {
                 for (int i2 = 0; i2 < cc.pixels.size(); i2++) {
-                    binaryImg[cc.pixels.get(i2)] = 0;
+                    imageArray[cc.pixels.get(i2)] = 0;
                 }
                 iter.remove();
                 itemCount--;
@@ -217,8 +213,8 @@ public class ObjectDetection extends PApplet {
      */
     private void colorImage() {
         //color background
-        for (int i = 0; i < binaryImg.length; i++) {
-            if (binaryImg[i] == 0) {
+        for (int i = 0; i < imageArray.length; i++) {
+            if (imageArray[i] == 0) {
                 dispWindow.pixels[i] = color(255, 255, 255);
             }
         }

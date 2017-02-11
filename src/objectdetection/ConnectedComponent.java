@@ -38,6 +38,7 @@ public class ConnectedComponent {
         calcBounds(displayWidth);
         calcAxis(displayWidth);
         compactness = Math.pow(perimeter.size(), 2) / pixels.size();
+        calcMedialAxis(displayWidth, displayHeight);
     }
 
     /**
@@ -134,6 +135,12 @@ public class ConnectedComponent {
         eccentricity = chiSquaredMax / chiSquaredMin;
     }
 
+    public void calcMedialAxis(int displayWidth, int displayHeight){
+        //you can treat the pixels like they are in the binary image because everything that isn't in the list can be thought of as a 0 pixel
+        for(int pixel : pixels){
+
+        }
+    }
     /**
      * A method to print all metrics about the item
      */
