@@ -2,6 +2,7 @@ package objectdetection;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 import static processing.core.PApplet.println;
@@ -14,6 +15,8 @@ public class ConnectedComponent {
 
     //item and perimeter pixels in object
     List<Integer> pixels = new ArrayList<>();
+    HashMap<Integer,Short> medialAxis = new HashMap<>();
+
     List<Integer> perimeter = new ArrayList<>();
     //width and height of object (not of bounding box)
     int width, height;
@@ -37,8 +40,78 @@ public class ConnectedComponent {
         calcCentroid(displayWidth);
         calcBounds(displayWidth);
         calcAxis(displayWidth);
+
+        calcMedialAxis(displayWidth, displayHeight, binaryImg);
         compactness = Math.pow(perimeter.size(), 2) / pixels.size();
-        calcMedialAxis(displayWidth, displayHeight);
+    }
+
+    /**
+     * Determines the medial axis/skeleton of the object and adds those pixels to the medialaxis array
+     */
+    public void calcMedialAxis(int displayWidth, int displayHeight, short[] binaryImg) {
+        for (int i = 0; i < pixels.size(); i++) {
+            //run until you find the min chessboard distance to s-bar (background) then add that value to our distance transforms array
+            for (short x = 1; x < Math.min(displayWidth, displayHeight); x++) {
+                int N = pixels.get(i) - (displayWidth * x);
+                int E = pixels.get(i) + x;
+                int S = pixels.get(i) + (displayWidth * x);
+                int W = pixels.get(i) - x;
+                if (N < 0 || S >= displayWidth * displayHeight || E % displayWidth == 0 || W % displayWidth == displayWidth - 1) {
+                    binaryImg[pixels.get(i)] = x;
+                    break;
+                } else if (binaryImg[N] == 0 || binaryImg[E] == 0 || binaryImg[S] == 0 || binaryImg[W] == 0) {
+                    binaryImg[pixels.get(i)] = x;
+                    break;
+                }
+            }
+        }
+        int firstBackground = -1;
+        //get index of first background pixel
+        for (int x = 0; x < binaryImg.length; x++) {
+            if (binaryImg[x] == 0) {
+                firstBackground = x;
+                break;
+            }
+        }
+        for (int i = 0; i < pixels.size(); i++) {
+            short current = binaryImg[pixels.get(i)];
+            int N = pixels.get(i) - displayWidth;
+            int E = pixels.get(i) + 1;
+            int S = pixels.get(i) + displayWidth;
+            int W = pixels.get(i) - 1;
+            //if were checking a neighbor that is outside of the image area just pretend it is a background pixel
+            if (N < 0) {
+                N = firstBackground;
+            }
+            if (S >= displayWidth * displayHeight) {
+                S = firstBackground;
+            }
+            if (E % displayWidth == 0) {
+                E = firstBackground;
+            }
+            if (W % displayWidth == displayWidth - 1) {
+                W = firstBackground;
+            }
+            if (uvCheck(binaryImg[N], current) && uvCheck(binaryImg[E], current) && uvCheck(binaryImg[S], current) && uvCheck(binaryImg[W], current)) {
+                medialAxis.put(pixels.get(i), binaryImg[pixels.get(i)]);
+            }
+        }
+
+
+    }
+
+    private boolean uvCheck(short neighbor, short current) {
+        if (neighbor == 0) {
+            return true;
+        } else if (current >= neighbor) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public void recontructBinaryImage() {
+
     }
 
     /**
@@ -53,9 +126,7 @@ public class ConnectedComponent {
             //if n or s pixel is beyond the image were on the perimeter, if w or e pixel is on an edge were on the perimeter
             if (N < 0 || S >= displayWidth * displayHeight || E % displayWidth == 0 || W % displayWidth == displayWidth - 1) {
                 perimeter.add(pixels.get(i));
-
             } else if (binaryImg[N] == 0 || binaryImg[E] == 0 || binaryImg[S] == 0 || binaryImg[W] == 0) {
-
                 perimeter.add(pixels.get(i));
             }
         }
@@ -135,12 +206,6 @@ public class ConnectedComponent {
         eccentricity = chiSquaredMax / chiSquaredMin;
     }
 
-    public void calcMedialAxis(int displayWidth, int displayHeight){
-        //you can treat the pixels like they are in the binary image because everything that isn't in the list can be thought of as a 0 pixel
-        for(int pixel : pixels){
-
-        }
-    }
     /**
      * A method to print all metrics about the item
      */
