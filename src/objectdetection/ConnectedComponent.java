@@ -15,7 +15,7 @@ public class ConnectedComponent {
 
     //item and perimeter pixels in object
     List<Integer> pixels = new ArrayList<>();
-    HashMap<Integer,Short> medialAxis = new HashMap<>();
+    HashMap<Integer, Short> medialAxis = new HashMap<>();
 
     List<Integer> perimeter = new ArrayList<>();
     //width and height of object (not of bounding box)
@@ -45,26 +45,27 @@ public class ConnectedComponent {
         compactness = Math.pow(perimeter.size(), 2) / pixels.size();
     }
 
+//    public void restoreFullObject(int displayWidth, short[] binaryImg) {
+//        for (Integer pixel : medialAxis.keySet()) {
+//            for (int i = 0; i < medialAxis.get(pixel); i++) {
+//                binaryImg[pixel - (displayWidth * i)] = 1;
+//                binaryImg[pixel + i] = 1;
+//                binaryImg[pixel + (displayWidth * i)] = 1;
+//                binaryImg[pixel - i] = 1;
+//                binaryImg[pixel] = 1;
+//            }
+//        }
+//    }
+
     /**
      * Determines the medial axis/skeleton of the object and adds those pixels to the medialaxis array
      */
     public void calcMedialAxis(int displayWidth, int displayHeight, short[] binaryImg) {
-        for (int i = 0; i < pixels.size(); i++) {
-            //run until you find the min chessboard distance to s-bar (background) then add that value to our distance transforms array
-            for (short x = 1; x < Math.min(displayWidth, displayHeight); x++) {
-                int N = pixels.get(i) - (displayWidth * x);
-                int E = pixels.get(i) + x;
-                int S = pixels.get(i) + (displayWidth * x);
-                int W = pixels.get(i) - x;
-                if (N < 0 || S >= displayWidth * displayHeight || E % displayWidth == 0 || W % displayWidth == displayWidth - 1) {
-                    binaryImg[pixels.get(i)] = x;
-                    break;
-                } else if (binaryImg[N] == 0 || binaryImg[E] == 0 || binaryImg[S] == 0 || binaryImg[W] == 0) {
-                    binaryImg[pixels.get(i)] = x;
-                    break;
-                }
-            }
-        }
+        //GET DISTANCE TRANSFORMS
+        
+        calcDistanceTransforms(displayWidth, displayHeight, binaryImg);
+
+        //CALC MEDIAL AXIS
         int firstBackground = -1;
         //get index of first background pixel
         for (int x = 0; x < binaryImg.length; x++) {
@@ -92,27 +93,52 @@ public class ConnectedComponent {
             if (W % displayWidth == displayWidth - 1) {
                 W = firstBackground;
             }
-            if (uvCheck(binaryImg[N], current) && uvCheck(binaryImg[E], current) && uvCheck(binaryImg[S], current) && uvCheck(binaryImg[W], current)) {
+            //check if current pixel is greater than or equal to all its neighbors
+            if (current >= binaryImg[N] && current >= binaryImg[E] && current >= binaryImg[S] && current >= binaryImg[W]) {
                 medialAxis.put(pixels.get(i), binaryImg[pixels.get(i)]);
             }
         }
-
-
     }
 
-    private boolean uvCheck(short neighbor, short current) {
-        if (neighbor == 0) {
-            return true;
-        } else if (current >= neighbor) {
-            return true;
-        } else {
-            return false;
+    private void calcDistanceTransforms(int displayWidth, int displayHeight, short[] binaryImg) {
+        //change all pixels to 1's as first iteration
+        for (int i = 0; i < pixels.size(); i++) {
+            binaryImg[pixels.get(i)] = 1;
+        }
+        //next we will set all inner pixels to 2
+        for (short x = 2; x < Math.min(displayWidth, displayHeight); x++) {
+            boolean changesMade = false;
+            for (int i = 0; i < pixels.size(); i++) {
+                //find neighbors
+                int N = pixels.get(i) - displayWidth;
+                int E = pixels.get(i) + 1;
+                int S = pixels.get(i) + displayWidth;
+                int W = pixels.get(i) - 1;
+                //if we are not on an edge && (short circuit) if we have ALL 4-neighbors that are the current count (has already been changed) or is the count-1, change the current pixel to the current count
+                if (uvInBounds(N, E, S, W, displayWidth, displayHeight) && (binaryImg[N] == x || binaryImg[N] == x - 1) && (binaryImg[E] == x || binaryImg[E] == x - 1)
+                        && (binaryImg[S] == x || binaryImg[S] == x - 1) && (binaryImg[W] == x || binaryImg[W] == x - 1)) {
+                    binaryImg[pixels.get(i)] = x;
+                    changesMade = true;
+                }
+            }
+            //if we made no changes we are done
+            if (changesMade == false) {
+                break;
+            }
         }
     }
 
-    public void recontructBinaryImage() {
-
+    /**
+     * Helper Method for Distance Transform and Perimeter finding - returns true if the neighbors we are checking are within the image bounds
+     */
+    private boolean uvInBounds(int N, int E, int S, int W, int displayWidth, int displayHeight) {
+        if (N < 0 || S >= displayWidth * displayHeight || E % displayWidth == 0 || W % displayWidth == displayWidth - 1) {
+            return false;
+        } else {
+            return true;
+        }
     }
+
 
     /**
      * Determines the perimeter of the object and adds those pixels to the perimeter array
@@ -124,9 +150,7 @@ public class ConnectedComponent {
             int S = pixels.get(i) + displayWidth;
             int W = pixels.get(i) - 1;
             //if n or s pixel is beyond the image were on the perimeter, if w or e pixel is on an edge were on the perimeter
-            if (N < 0 || S >= displayWidth * displayHeight || E % displayWidth == 0 || W % displayWidth == displayWidth - 1) {
-                perimeter.add(pixels.get(i));
-            } else if (binaryImg[N] == 0 || binaryImg[E] == 0 || binaryImg[S] == 0 || binaryImg[W] == 0) {
+            if (uvInBounds(N, E, S, W, displayWidth, displayHeight) && (binaryImg[N] == 0 || binaryImg[E] == 0 || binaryImg[S] == 0 || binaryImg[W] == 0)) {
                 perimeter.add(pixels.get(i));
             }
         }

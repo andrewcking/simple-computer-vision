@@ -268,7 +268,7 @@ public class ObjectDetection extends PApplet {
             if (imageArray[i] == 0) {
                 dispWindow.pixels[i] = color(255, 255, 255);
             } else {
-                dispWindow.pixels[i] = color(imageArray[i]*4);
+                dispWindow.pixels[i] = color(0);
             }
         }
         //color foreground
