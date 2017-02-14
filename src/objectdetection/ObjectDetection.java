@@ -1,8 +1,6 @@
 package objectdetection;
 
-
 import processing.core.*;
-import sun.plugin.javascript.navig.ImageArray;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -40,16 +38,18 @@ public class ObjectDetection extends PApplet {
         convertToBinaryImage();
         //takes filter size as argument
         connectedComponent(1500);
-        skeletonAndRebuild();
-        //color our image turn this off to see original image
-        colorImage();
+        //skeletonize our components removing all pixel data except the medial axis
+        skeletonize();
+        //reconstruct our components based on their medial axes
+        deSkeletonize();
+        //color our image (binary?, show perimeter?, show medial axis?)
+        colorImage(true, false, false);
         //Display image in display window beginning at top left corner
         image(dispWindow, 0, 0);
-        //Show bounding box, centroid and medial axis but not centroid coordinates
-        //showItemDetails(true, true, false);
+        //Show bounding box and centroid but not centroid coordinates
+        showItemDetails(true, true, false);
         //output component details
-        //outputImageInfo();
-
+        outputImageInfo();
     }
 
     /**
@@ -60,53 +60,17 @@ public class ObjectDetection extends PApplet {
     }
 
 
-    public void skeletonAndRebuild() {
-        //wipe the binary image and just add the medial axises
-        imageArray = new short[displayWidth * displayHeight];
-
+    public void skeletonize() {
         for (ConnectedComponent cc : listOfItems) {
-            for (Integer pix : cc.medialAxis.keySet()) {
-                imageArray[pix] = cc.medialAxis.get(pix);
-            }
-        }
-
-        //get the maximum value/distance in the image array to use as for loop start
-        short maxValue = 0;
-        for (short pixel : imageArray) {
-            if (pixel > maxValue) {
-                maxValue = pixel;
-            }
-        }
-        //loop from our max value down to 1(inclusive) incrementally building out our binary image again
-        for (int i = maxValue; i > 0; i--) {
-            for (int x = 0; x < imageArray.length; x++) {
-                if (imageArray[x] == i) {
-                    //get our compass pixels
-                    int N = x - displayWidth;
-                    int E = x + 1;
-                    int S = x + displayWidth;
-                    int W = x - 1;
-                    //if there is a north pixel and it hasn't been rebuilt already, build it with our current i-1
-                    if (!(N < 0) && imageArray[N] == 0) {
-                            imageArray[N] = (short) (i - 1);
-                    }
-                    //if there is an east pixel
-                    if (!(E % displayWidth == 0) && imageArray[E] == 0) {
-                            imageArray[E] = (short) (i - 1);
-                    }
-                    //if there is a south pixel
-                    if (!(S >= displayWidth * displayHeight) && imageArray[S] == 0) {
-                            imageArray[S] = (short) (i - 1);
-                    }
-                    //if there is a west pixel
-                    if (!(W % displayWidth == displayWidth - 1) && imageArray[W] == 0) {
-                            imageArray[W] = (short) (i - 1);
-                    }
-                }
-            }
+            cc.skeletonize();
         }
     }
 
+    public void deSkeletonize() {
+        for (ConnectedComponent cc : listOfItems) {
+            cc.deSkeletonize(displayWidth, displayHeight);
+        }
+    }
 
     /**
      * Loads our gray scale image to a byte array and trims the header info
@@ -262,32 +226,36 @@ public class ObjectDetection extends PApplet {
     /**
      * Display the background and a unique color for each image
      */
-    private void colorImage() {
+    private void colorImage(boolean binary, boolean perimeter, boolean axis) {
         //color background
-        for (int i = 0; i < imageArray.length; i++) {
-            if (imageArray[i] == 0) {
-                dispWindow.pixels[i] = color(255, 255, 255);
-            } else {
-                dispWindow.pixels[i] = color(0);
-            }
-        }
+        background(255);
         //color foreground
         for (int i = 0; i < listOfItems.size(); i++) {
-//            for (int pix : listOfItems.get(i).pixels) {
-//                randomSeed(i);
-//                dispWindow.pixels[pix] = color(random(0, 200), random(0, 200), random(50, 255));
-//            }
-//            //color perimeter
-//            for (int pix : listOfItems.get(i).perimeter) {
-//                dispWindow.pixels[pix] = color(1, 1, 1);
-//            }
-//            for (int pixel : listOfItems.get(i).pixels){
-//                dispWindow.pixels[pixel] = color(listOfItems.get(i).distanceTransforms[pixel]*10);
-//            }
-//            for (int pix : listOfItems.get(i).medialAxis) {
-//                dispWindow.pixels[pix] = color(0, 0, 0);
-//            }
+            Integer myColor;
+            if (binary) {
+                myColor = color(0);
+            } else {
+                randomSeed(i);
+                myColor = color(random(0, 200), random(0, 200), random(50, 255));
+            }
+            //Color Object
+            for (int pix : listOfItems.get(i).pixels) {
+                dispWindow.pixels[pix] = myColor;
+            }
+            //Color Perimeter
+            if (perimeter) {
+                for (int pix : listOfItems.get(i).perimeter) {
+                    dispWindow.pixels[pix] = color(0);
+                }
+            }
+            //Color Medial Axis
+            if (axis) {
+                for (int pix : listOfItems.get(i).medialAxis.keySet()) {
+                    dispWindow.pixels[pix] = myColor;
+                }
+            }
         }
+
     }
 
     /**
@@ -311,8 +279,8 @@ public class ObjectDetection extends PApplet {
                 textSize(12);
                 text(cc.getCentroidX() + "," + cc.getCentroidY(), cc.getCentroidX() - 50, cc.getCentroidY() + 5);
                 fill(0, 0);
+                updatePixels();
             }
-
         }
     }
 
