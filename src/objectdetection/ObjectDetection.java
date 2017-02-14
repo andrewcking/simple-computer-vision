@@ -1,6 +1,5 @@
 package objectdetection;
 
-
 import processing.core.*;
 
 import java.util.ArrayList;
@@ -38,16 +37,19 @@ public class ObjectDetection extends PApplet {
         loadImageData("comb.img", 512);
         convertToBinaryImage();
         //takes filter size as argument
-        connectedComponent(50);
-        //color our image turn this off to see original image
-        colorImage();
+        connectedComponent(1500);
+        //skeletonize our components removing all pixel data except the medial axis
+        skeletonize();
+        //reconstruct our components based on their medial axes
+        deSkeletonize();
+        //color our image (binary?, show perimeter?, show medial axis?)
+        colorImage(true, false, false);
         //Display image in display window beginning at top left corner
         image(dispWindow, 0, 0);
-        //Show bounding box, centroid, but not centroid coordinates
+        //Show bounding box and centroid but not centroid coordinates
         showItemDetails(true, true, false);
         //output component details
         outputImageInfo();
-
     }
 
     /**
@@ -55,6 +57,19 @@ public class ObjectDetection extends PApplet {
      */
     public void settings() {
         size(displayWidth, displayWidth);
+    }
+
+
+    public void skeletonize() {
+        for (ConnectedComponent cc : listOfItems) {
+            cc.skeletonize();
+        }
+    }
+
+    public void deSkeletonize() {
+        for (ConnectedComponent cc : listOfItems) {
+            cc.deSkeletonize(displayWidth, displayHeight);
+        }
     }
 
     /**
@@ -65,9 +80,9 @@ public class ObjectDetection extends PApplet {
         //utilize processing loadBytes call
         byte[] grayPixels = loadBytes(filename);
         //create binary image array
-        imageArray = new short[dispWindow.width * dispWindow.height];
+        imageArray = new short[displayWidth * displayHeight];
         //trim the header data from the image and make it a short so we can have larger label numbers
-        for(int i = trimHeader; i < grayPixels.length; i++){
+        for (int i = trimHeader; i < grayPixels.length; i++) {
             //since these are unsigned bytes we have to read them as such and covert them back to short
             imageArray[i - trimHeader] = (short) Byte.toUnsignedInt(grayPixels[i]);
         }
@@ -211,24 +226,36 @@ public class ObjectDetection extends PApplet {
     /**
      * Display the background and a unique color for each image
      */
-    private void colorImage() {
+    private void colorImage(boolean binary, boolean perimeter, boolean axis) {
         //color background
-        for (int i = 0; i < imageArray.length; i++) {
-            if (imageArray[i] == 0) {
-                dispWindow.pixels[i] = color(255, 255, 255);
-            }
-        }
+        background(255);
         //color foreground
         for (int i = 0; i < listOfItems.size(); i++) {
-            for (int pix : listOfItems.get(i).pixels) {
+            Integer myColor;
+            if (binary) {
+                myColor = color(0);
+            } else {
                 randomSeed(i);
-                dispWindow.pixels[pix] = color(random(0,200), random(0,200), random(50,255));
+                myColor = color(random(0, 200), random(0, 200), random(50, 255));
             }
-            //color perimeter
-            for (int pix : listOfItems.get(i).perimeter) {
-                dispWindow.pixels[pix] = color(1, 1, 1);
+            //Color Object
+            for (int pix : listOfItems.get(i).pixels) {
+                dispWindow.pixels[pix] = myColor;
+            }
+            //Color Perimeter
+            if (perimeter) {
+                for (int pix : listOfItems.get(i).perimeter) {
+                    dispWindow.pixels[pix] = color(0);
+                }
+            }
+            //Color Medial Axis
+            if (axis) {
+                for (int pix : listOfItems.get(i).medialAxis.keySet()) {
+                    dispWindow.pixels[pix] = myColor;
+                }
             }
         }
+
     }
 
     /**
@@ -252,6 +279,7 @@ public class ObjectDetection extends PApplet {
                 textSize(12);
                 text(cc.getCentroidX() + "," + cc.getCentroidY(), cc.getCentroidX() - 50, cc.getCentroidY() + 5);
                 fill(0, 0);
+                updatePixels();
             }
         }
     }

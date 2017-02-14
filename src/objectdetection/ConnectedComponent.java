@@ -2,6 +2,7 @@ package objectdetection;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 import static processing.core.PApplet.println;
@@ -14,6 +15,8 @@ public class ConnectedComponent {
 
     //item and perimeter pixels in object
     List<Integer> pixels = new ArrayList<>();
+    HashMap<Integer, Short> medialAxis = new HashMap<>();
+
     List<Integer> perimeter = new ArrayList<>();
     //width and height of object (not of bounding box)
     int width, height;
@@ -37,8 +40,8 @@ public class ConnectedComponent {
         calcCentroid(displayWidth);
         calcBounds(displayWidth);
         calcAxis(displayWidth);
-        compactness = Math.pow(perimeter.size(), 2) / pixels.size();
         calcMedialAxis(displayWidth, displayHeight);
+        compactness = Math.pow(perimeter.size(), 2) / pixels.size();
     }
 
     /**
@@ -51,13 +54,20 @@ public class ConnectedComponent {
             int S = pixels.get(i) + displayWidth;
             int W = pixels.get(i) - 1;
             //if n or s pixel is beyond the image were on the perimeter, if w or e pixel is on an edge were on the perimeter
-            if (N < 0 || S >= displayWidth * displayHeight || E % displayWidth == 0 || W % displayWidth == displayWidth - 1) {
-                perimeter.add(pixels.get(i));
-
-            } else if (binaryImg[N] == 0 || binaryImg[E] == 0 || binaryImg[S] == 0 || binaryImg[W] == 0) {
-
+            if (uvInBounds(N, E, S, W, displayWidth, displayHeight) && (binaryImg[N] == 0 || binaryImg[E] == 0 || binaryImg[S] == 0 || binaryImg[W] == 0)) {
                 perimeter.add(pixels.get(i));
             }
+        }
+    }
+
+    /**
+     * Helper Method for Distance Transform and Perimeter finding - returns true if the neighbors we are checking are within the image bounds
+     */
+    private boolean uvInBounds(int N, int E, int S, int W, int displayWidth, int displayHeight) {
+        if (N < 0 || S >= displayWidth * displayHeight || E % displayWidth == 0 || W % displayWidth == displayWidth - 1) {
+            return false;
+        } else {
+            return true;
         }
     }
 
@@ -104,7 +114,6 @@ public class ConnectedComponent {
         top = (min / fullWidth) - 1;
         int bottom = max / fullWidth;
         height = bottom - top;
-
     }
 
     /**
@@ -135,12 +144,137 @@ public class ConnectedComponent {
         eccentricity = chiSquaredMax / chiSquaredMin;
     }
 
-    public void calcMedialAxis(int displayWidth, int displayHeight){
-        //you can treat the pixels like they are in the binary image because everything that isn't in the list can be thought of as a 0 pixel
-        for(int pixel : pixels){
+    /**
+     * Determines the medial axis/skeleton of the object and adds those pixels to the medialaxis array
+     */
+    public void calcMedialAxis(int displayWidth, int displayHeight) {
+        //GET DISTANCE TRANSFORMS - use temporary binary image for calculations without affecting our actual binary image
+        short[] distTrans = new short[displayWidth * displayHeight];
+        calcDistanceTransforms(displayWidth, displayHeight, distTrans);
 
+        //CALC MEDIAL AXIS
+        int firstBackground = -1;
+        //get index of first background pixel
+        for (int x = 0; x < distTrans.length; x++) {
+            if (distTrans[x] == 0) {
+                firstBackground = x;
+                break;
+            }
+        }
+        for (int i = 0; i < pixels.size(); i++) {
+            short current = distTrans[pixels.get(i)];
+            int N = pixels.get(i) - displayWidth;
+            int E = pixels.get(i) + 1;
+            int S = pixels.get(i) + displayWidth;
+            int W = pixels.get(i) - 1;
+            //if were checking a neighbor that is outside of the image area just pretend it is a background pixel
+            if (N < 0) {
+                N = firstBackground;
+            }
+            if (S >= displayWidth * displayHeight) {
+                S = firstBackground;
+            }
+            if (E % displayWidth == 0) {
+                E = firstBackground;
+            }
+            if (W % displayWidth == displayWidth - 1) {
+                W = firstBackground;
+            }
+            //check if current pixel is greater than or equal to all its neighbors
+            if (current >= distTrans[N] && current >= distTrans[E] && current >= distTrans[S] && current >= distTrans[W]) {
+                medialAxis.put(pixels.get(i), distTrans[pixels.get(i)]);
+            }
         }
     }
+
+    private void calcDistanceTransforms(int displayWidth, int displayHeight, short[] distTrans) {
+        //set all pixels to 1's as first iteration
+        for (int i = 0; i < pixels.size(); i++) {
+            distTrans[pixels.get(i)] = 1;
+        }
+        //next we will set all inner pixels to 2
+        for (short x = 2; x < Math.min(displayWidth, displayHeight); x++) {
+            boolean changesMade = false;
+            for (int i = 0; i < pixels.size(); i++) {
+                //find neighbors
+                int N = pixels.get(i) - displayWidth;
+                int E = pixels.get(i) + 1;
+                int S = pixels.get(i) + displayWidth;
+                int W = pixels.get(i) - 1;
+                //if we are not on an edge && (short circuit) if we have ALL 4-neighbors that are the current count (has already been changed) or is the count-1, change the current pixel to the current count
+                if (uvInBounds(N, E, S, W, displayWidth, displayHeight) && (distTrans[N] == x || distTrans[N] == x - 1) && (distTrans[E] == x || distTrans[E] == x - 1)
+                        && (distTrans[S] == x || distTrans[S] == x - 1) && (distTrans[W] == x || distTrans[W] == x - 1)) {
+                    distTrans[pixels.get(i)] = x;
+                    changesMade = true;
+                }
+            }
+            //if we made no changes we are done
+            if (changesMade == false) {
+                break;
+            }
+        }
+    }
+
+    /**
+     * Converts the object to its medial axis only (removes all other pixel data)
+     */
+    public void skeletonize() {
+        pixels = new ArrayList<>();
+        for (Integer pixel : medialAxis.keySet()) {
+            pixels.add(pixel);
+        }
+    }
+
+    /**
+     * Reconstructs the object from its medial axis
+     */
+    public void deSkeletonize(int displayWidth, int displayHeight) {
+        short[] deSkeleton = new short[displayWidth * displayHeight];
+        for (Integer pixel : medialAxis.keySet()) {
+            deSkeleton[pixel] = medialAxis.get(pixel);
+        }
+
+        //get the maximum value/distance in the image array to use as for loop start
+        short maxValue = 0;
+        for (short pixel : deSkeleton) {
+            if (pixel > maxValue) {
+                maxValue = pixel;
+            }
+        }
+        //loop from our max value down to 2(inclusive, which builds the 1s ring) incrementally building out our binary image again
+        for (int i = maxValue; i > 1; i--) {
+            for (int x = 0; x < deSkeleton.length; x++) {
+                if (deSkeleton[x] == i) {
+                    //get our compass pixels
+                    int N = x - displayWidth;
+                    int E = x + 1;
+                    int S = x + displayWidth;
+                    int W = x - 1;
+                    //if there is a north pixel and it hasn't been rebuilt already, build it with our current i-1
+                    if (!(N < 0) && deSkeleton[N] == 0) {
+                        deSkeleton[N] = (short) (i - 1);
+                        pixels.add(N);
+                    }
+                    //if there is an east pixel
+                    if (!(E % displayWidth == 0) && deSkeleton[E] == 0) {
+                        deSkeleton[E] = (short) (i - 1);
+                        pixels.add(E);
+                    }
+                    //if there is a south pixel
+                    if (!(S >= displayWidth * displayHeight) && deSkeleton[S] == 0) {
+                        deSkeleton[S] = (short) (i - 1);
+                        pixels.add(S);
+                    }
+                    //if there is a west pixel
+                    if (!(W % displayWidth == displayWidth - 1) && deSkeleton[W] == 0) {
+                        deSkeleton[W] = (short) (i - 1);
+                        pixels.add(W);
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * A method to print all metrics about the item
      */
@@ -170,6 +304,5 @@ public class ConnectedComponent {
     public int getCentroidX() { return centroidX; }
 
     public int getCentroidY() { return centroidY; }
-
 
 }
