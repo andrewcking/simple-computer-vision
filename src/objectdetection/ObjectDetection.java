@@ -22,7 +22,6 @@ public class ObjectDetection extends PApplet {
     //list of our components
     List<ConnectedComponent> listOfItems = new ArrayList<>();
 
-
     //display width and height
     int displayWidth = 512;
     int displayHeight = 512;
@@ -43,7 +42,7 @@ public class ObjectDetection extends PApplet {
         //reconstruct our components based on their medial axes
         deSkeletonize();
         //color our image (binary?, show perimeter?, show medial axis?)
-        colorImage(true, false, false);
+        colorImage(false, true, true);
         //Display image in display window beginning at top left corner
         image(dispWindow, 0, 0);
         //Show bounding box and centroid but not centroid coordinates
@@ -57,19 +56,6 @@ public class ObjectDetection extends PApplet {
      */
     public void settings() {
         size(displayWidth, displayWidth);
-    }
-
-
-    public void skeletonize() {
-        for (ConnectedComponent cc : listOfItems) {
-            cc.skeletonize();
-        }
-    }
-
-    public void deSkeletonize() {
-        for (ConnectedComponent cc : listOfItems) {
-            cc.deSkeletonize(displayWidth, displayHeight);
-        }
     }
 
     /**
@@ -224,6 +210,24 @@ public class ObjectDetection extends PApplet {
     }
 
     /**
+     * Skeletonizes all of our components
+     */
+    public void skeletonize() {
+        for (ConnectedComponent cc : listOfItems) {
+            cc.skeletonize();
+        }
+    }
+
+    /**
+     * deSkeletonizes each component
+     */
+    public void deSkeletonize() {
+        for (ConnectedComponent cc : listOfItems) {
+            cc.deSkeletonize(displayWidth, displayHeight);
+        }
+    }
+
+    /**
      * Display the background and a unique color for each image
      */
     private void colorImage(boolean binary, boolean perimeter, boolean axis) {
@@ -251,7 +255,7 @@ public class ObjectDetection extends PApplet {
             //Color Medial Axis
             if (axis) {
                 for (int pix : listOfItems.get(i).medialAxis.keySet()) {
-                    dispWindow.pixels[pix] = myColor;
+                    dispWindow.pixels[pix] = color(0, 255, 0);
                 }
             }
         }

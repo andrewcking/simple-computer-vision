@@ -6,7 +6,7 @@ import java.util.Collections;
 
 /**
  * @author Andrew King
- * Simple Data Structure for building an equivalence table for use in sequential connected component algorithm
+ *         Simple Data Structure for building an equivalence table for use in sequential connected component algorithm
  */
 public class EquivalenceTable {
 

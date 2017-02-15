@@ -9,7 +9,8 @@ import static processing.core.PApplet.println;
 
 /**
  * @author Andrew King
- *         Class for our components, contains their pixel info and metrics
+ *         Class for our components, contains their pixel, perimeter, centroid, and medial medial axis data
+ *         Also contains metrics such as bounding box points, compactness, and axis of elongation
  */
 public class ConnectedComponent {
 
